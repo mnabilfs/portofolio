@@ -4,9 +4,11 @@ import { supabase } from '../supabase'
 import Projects from './dashboard/Projects'
 import Certificates from './dashboard/Certificates'
 import Comments from './dashboard/Comments'
-import { FolderGit2, Award, MessageSquare, LogOut, LayoutDashboard, Menu } from 'lucide-react'
+import AboutMe from './dashboard/AboutMe'
+import { FolderGit2, Award, MessageSquare, LogOut, LayoutDashboard, Menu, User } from 'lucide-react'
 
 const NAV_ITEMS = [
+  { to: 'about-me', label: 'About Me', icon: User },
   { to: 'projects', label: 'Projects', icon: FolderGit2 },
   { to: 'certificates', label: 'Certificates', icon: Award },
   { to: 'comments', label: 'Comments', icon: MessageSquare },
@@ -123,7 +125,8 @@ export default function Dashboard() {
         {/* Hanya main yang overflow-y-auto — scrollbar bisa diklik normal */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <Routes>
-            <Route index element={<Navigate to="projects" replace />} />
+            <Route index element={<Navigate to="about-me" replace />} />
+            <Route path="about-me" element={<AboutMe />} />
             <Route path="projects" element={<Projects />} />
             <Route path="certificates" element={<Certificates />} />
             <Route path="comments" element={<Comments />} />

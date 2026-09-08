@@ -11,6 +11,7 @@ import {
   Github,
   Pencil,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
 const Card = ({ children, className = "" }) => (
   <div className={`relative group ${className}`}>
@@ -381,6 +382,14 @@ export default function Projects() {
     setShowCreate(false);
     setUploading(false);
     fetchProjects();
+    Swal.fire({
+      title: 'Berhasil!',
+      text: 'Project berhasil ditambahkan.',
+      icon: 'success',
+      confirmButtonColor: '#6366f1',
+      timer: 2000,
+      timerProgressBar: true
+    });
   };
 
   const handleEdit = async (form, file) => {
@@ -406,12 +415,38 @@ export default function Projects() {
     setEditProject(null);
     setUploading(false);
     fetchProjects();
+    Swal.fire({
+      title: 'Berhasil!',
+      text: 'Project berhasil diperbarui.',
+      icon: 'success',
+      confirmButtonColor: '#6366f1',
+      timer: 2000,
+      timerProgressBar: true
+    });
   };
 
   const deleteProject = async (id) => {
-    if (!confirm("Delete this project?")) return;
+    const result = await Swal.fire({
+      title: 'Hapus Project?',
+      text: 'Data project ini akan dihapus permanen.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6366f1',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal'
+    });
+    if (!result.isConfirmed) return;
     await supabase.from("projects").delete().eq("id", id);
     fetchProjects();
+    Swal.fire({
+      title: 'Terhapus!',
+      text: 'Project berhasil dihapus.',
+      icon: 'success',
+      confirmButtonColor: '#6366f1',
+      timer: 1500,
+      timerProgressBar: true
+    });
   };
 
   return (

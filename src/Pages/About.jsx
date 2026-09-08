@@ -2,6 +2,7 @@ import React, { useEffect, useState, memo, useMemo } from "react"
 import { FileText, Code, Award, Globe, ArrowUpRight, Sparkles, UserCheck } from "lucide-react"
 import AOS from 'aos'
 import 'aos/dist/aos.css'
+import { supabase } from "../supabase"
 
 // Memoized Components
 const Header = memo(() => (
@@ -27,7 +28,7 @@ const Header = memo(() => (
   </div>
 ));
 
-const ProfileImage = memo(() => (
+const ProfileImage = memo(({ profileImg }) => (
   <div className="flex justify-end items-center sm:p-12 sm:py-0 sm:pb-0 p-0 py-2 pb-2">
     <div 
       className="relative group" 
@@ -50,7 +51,7 @@ const ProfileImage = memo(() => (
           <div className="absolute inset-0 bg-gradient-to-t from-purple-500/20 via-transparent to-blue-500/20 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 hidden sm:block" />
           
           <img
-            src="/Photo.jpeg"
+            src={profileImg}
             alt="Profile"
             className="w-full h-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2"
             loading="lazy"
@@ -119,6 +120,28 @@ const AboutPage = () => {
     totalCertificates: 0,
     YearExperience: 0,
   });
+  
+  const [aboutData, setAboutData] = useState({
+    cvLink: "",
+    profileImg: ""
+  });
+
+  useEffect(() => {
+    const fetchAboutData = async () => {
+      try {
+        const { data, error } = await supabase.from('about_me').select('*').limit(1);
+        if (data && data.length > 0) {
+          setAboutData({
+            cvLink: data[0].cv_link,
+            profileImg: data[0].profile_img
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching about data:", error);
+      }
+    };
+    fetchAboutData();
+  }, []);
 
   useEffect(() => {
     const updateStats = () => {
@@ -266,7 +289,7 @@ Saya berfokus pada penciptaan pengalaman digital yang menarik dan selalu berupay
 
             <div className="flex flex-col lg:flex-row items-center lg:items-start gap-4 lg:gap-4 lg:px-0 w-full">
               <a 
-                href="https://drive.google.com/drive/folders/1CTug7h_Y_9ChKzx-a7a7J7jwQWX9DWrw?usp=sharing" 
+                href={aboutData.cvLink} 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="w-full lg:w-auto"
@@ -291,7 +314,7 @@ Saya berfokus pada penciptaan pengalaman digital yang menarik dan selalu berupay
             </div>
           </div>
 
-          <ProfileImage />
+          <ProfileImage profileImg={aboutData.profileImg} />
         </div>
 
         <a href="#Portofolio">

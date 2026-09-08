@@ -21,22 +21,14 @@ const Comment = memo(({ comment, formatDate, index, isPinned = false }) => (
             </div>
         )}
         <div className="flex items-start gap-3">
-            {comment.profile_image ? (
-                <img
-                    src={comment.profile_image}
-                    alt={`${comment.user_name}'s profile`}
-                    className={`w-10 h-10 rounded-full object-cover border-2 flex-shrink-0  ${
-                        isPinned ? 'border-indigo-500/50' : 'border-indigo-500/30'
-                    }`}
-                    loading="lazy"
-                />
-            ) : (
-                <div className={`p-2 rounded-full text-indigo-400 group-hover:bg-indigo-500/30 transition-colors ${
-                    isPinned ? 'bg-indigo-500/30' : 'bg-indigo-500/20'
-                }`}>
-                    <UserCircle2 className="w-5 h-5" />
-                </div>
-            )}
+            <img
+                src={comment.profile_image || "/default-avatar.jpg"}
+                alt={`${comment.user_name}'s profile`}
+                className={`w-10 h-10 rounded-full object-cover border-2 flex-shrink-0  ${
+                    isPinned ? 'border-indigo-500/50' : 'border-indigo-500/30'
+                }`}
+                loading="lazy"
+            />
             <div className="flex-grow min-w-0">
                 <div className="flex items-center justify-between gap-4 mb-2">
                     <div className="flex items-center gap-2">
@@ -45,7 +37,7 @@ const Comment = memo(({ comment, formatDate, index, isPinned = false }) => (
                         }`}>
                             {comment.user_name}
                         </h4>
-                        {isPinned && (
+                        {comment.is_admin && (
                             <span className="px-2 py-0.5 text-xs bg-indigo-500/20 text-indigo-300 rounded-full">
                                 Admin
                             </span>
@@ -227,9 +219,10 @@ const CommentForm = memo(({ onSubmit, isSubmitting, error }) => {
 
 const Komentar = () => {
     const [comments, setComments] = useState([]);
-    const [pinnedComment, setPinnedComment] = useState(null);
+    const [pinnedComments, setPinnedComments] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
 
     useEffect(() => {
         // Initialize AOS
@@ -239,31 +232,30 @@ const Komentar = () => {
         });
     }, []);
 
-    // Fetch pinned comment
     useEffect(() => {
-        const fetchPinnedComment = async () => {
+        const fetchPinnedComments = async () => {
             try {
                 const { data, error } = await supabase
                     .from('portfolio_comments')
                     .select('*')
                     .eq('is_pinned', true)
-                    .single();
+                    .order('created_at', { ascending: false });
                 
-                if (error && error.code !== 'PGRST116') {
-                    console.error('Error fetching pinned comment:', error);
+                if (error) {
+                    console.error('Error fetching pinned comments:', error);
                     return;
                 }
                 
                 if (data) {
-                    setPinnedComment(data);
+                    setPinnedComments(data);
                 }
             } catch (error) {
-                console.error('Error fetching pinned comment:', error);
+                console.error('Error fetching pinned comments:', error);
             }
         };
 
-        fetchPinnedComment();
-    }, []);
+        fetchPinnedComments();
+    }, [refreshTrigger]);
 
     // Fetch regular comments (excluding pinned) and set up real-time subscription
     useEffect(() => {
@@ -291,11 +283,16 @@ const Komentar = () => {
                 { 
                     event: '*', 
                     schema: 'public', 
-                    table: 'portfolio_comments',
-                    filter: 'is_pinned=eq.false'
+                    table: 'portfolio_comments'
                 }, 
                 () => {
                     fetchComments(); // Refresh comments when changes occur
+                    // Also refresh pinned comments
+                    const fetchPinned = async () => {
+                        const { data } = await supabase.from('portfolio_comments').select('*').eq('is_pinned', true).order('created_at', { ascending: false });
+                        if (data) setPinnedComments(data);
+                    };
+                    fetchPinned();
                 }
             )
             .subscribe();
@@ -303,7 +300,7 @@ const Komentar = () => {
         return () => {
             subscription.unsubscribe();
         };
-    }, []);
+    }, [refreshTrigger]);
 
     const uploadImage = useCallback(async (imageFile) => {
         if (!imageFile) return null;
@@ -342,6 +339,7 @@ const Komentar = () => {
                         user_name: userName,
                         profile_image: profileImageUrl,
                         is_pinned: false,
+                        is_admin: false,
                         created_at: new Date().toISOString()
                     }
                 ]);
@@ -349,6 +347,9 @@ const Komentar = () => {
             if (error) {
                 throw error;
             }
+            
+            // Trigger a re-fetch of comments immediately
+            setRefreshTrigger(prev => prev + 1);
         } catch (error) {
             setError('Failed to post comment. Please try again.');
             console.error('Error adding comment: ', error);
@@ -378,7 +379,7 @@ const Komentar = () => {
     }, []);
 
     // Calculate total comments (pinned + regular)
-    const totalComments = comments.length + (pinnedComment ? 1 : 0);
+    const totalComments = comments.length + pinnedComments.length;
 
     return (
         <div className="w-full bg-gradient-to-b from-white/10 to-white/5 rounded-2xl  backdrop-blur-xl shadow-xl" data-aos="fade-up" data-aos-duration="1000">
@@ -405,20 +406,23 @@ const Komentar = () => {
                 </div>
 
                 <div className="space-y-4 h-[328px] overflow-y-auto overflow-x-hidden custom-scrollbar pt-1 pr-1 " data-aos="fade-up" data-aos-delay="200">
-                    {/* Pinned Comment */}
-                    {pinnedComment && (
-                        <div data-aos="fade-down" data-aos-duration="800">
-                            <Comment 
-                                comment={pinnedComment} 
-                                formatDate={formatDate}
-                                index={0}
-                                isPinned={true}
-                            />
+                    {/* Pinned Comments */}
+                    {pinnedComments.length > 0 && (
+                        <div data-aos="fade-down" data-aos-duration="800" className="space-y-4">
+                            {pinnedComments.map((comment, index) => (
+                                <Comment 
+                                    key={`pinned-${comment.id}`} 
+                                    comment={comment} 
+                                    formatDate={formatDate}
+                                    index={index}
+                                    isPinned={true}
+                                />
+                            ))}
                         </div>
                     )}
                     
                     {/* Regular Comments */}
-                    {comments.length === 0 && !pinnedComment ? (
+                    {comments.length === 0 && pinnedComments.length === 0 ? (
                         <div className="text-center py-8" data-aos="fade-in">
                             <UserCircle2 className="w-12 h-12 text-indigo-400 mx-auto mb-3 opacity-50" />
                             <p className="text-gray-400">No comments yet. Start the conversation!</p>
@@ -429,7 +433,7 @@ const Komentar = () => {
                                 key={comment.id} 
                                 comment={comment} 
                                 formatDate={formatDate}
-                                index={index + (pinnedComment ? 1 : 0)}
+                                index={index + pinnedComments.length}
                                 isPinned={false}
                             />
                         ))

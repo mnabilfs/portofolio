@@ -156,7 +156,7 @@ const ProjectDetails = () => {
     );
   }
 
-  const projectUrl = `https://nabil.com/project/${toSlug(project.Title)}`;
+  const projectUrl = `https://mnabilfs.site/project/${toSlug(project.Title)}`;
 
   return (
     <>
@@ -193,7 +193,7 @@ const ProjectDetails = () => {
             "author": {
               "@type": "Person",
               "name": "Muhammad Nabil Farras Sulthan",
-              "url": "https://nabil.com"
+              "url": "https://mnabilfs.site"
             }
           }
         `}</script>

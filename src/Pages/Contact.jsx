@@ -13,6 +13,7 @@ const ContactPage = () => {
     name: "",
     email: "",
     message: "",
+    honey: "", // Honeypot spam protection
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,8 +45,8 @@ const ContactPage = () => {
     });
 
     try {
-      // Ganti dengan email Anda di FormSubmit
-      const formSubmitUrl = 'https://formsubmit.co/ekizulfarrachman@gmail.com';
+      // Ambil email dari environment variable
+      const formSubmitUrl = import.meta.env.VITE_FORMSUBMIT_URL;
       
       // Siapkan data form untuk FormSubmit
       const submitData = new FormData();
@@ -53,7 +54,8 @@ const ContactPage = () => {
       submitData.append('email', formData.email);
       submitData.append('message', formData.message);
       submitData.append('_subject', 'Pesan Baru dari Website Portfolio');
-      submitData.append('_captcha', 'false'); // Nonaktifkan captcha
+      submitData.append('_captcha', 'false'); // WAJIB 'false' jika pakai Axios/AJAX
+      submitData.append('_honey', formData.honey); // Honeypot untuk menangkal spam
       submitData.append('_template', 'table'); // Format email sebagai tabel
 
       await axios.post(formSubmitUrl, submitData, {
@@ -76,6 +78,7 @@ const ContactPage = () => {
         name: "",
         email: "",
         message: "",
+        honey: "",
       });
 
     } catch (error) {
@@ -93,6 +96,7 @@ const ContactPage = () => {
           name: "",
           email: "",
           message: "",
+          honey: "",
         });
       } else {
         Swal.fire({
@@ -162,6 +166,15 @@ const ContactPage = () => {
               onSubmit={handleSubmit}
               className="space-y-6"
             >
+              {/* Hidden Honeypot Input to catch spam bots */}
+              <input 
+                type="text" 
+                name="honey" 
+                style={{ display: "none" }} 
+                value={formData.honey} 
+                onChange={handleChange} 
+              />
+              
               <div
                 data-aos="fade-up"
                 data-aos-delay="100"

@@ -10,7 +10,11 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Plus,
+  Send,
+  Loader2,
 } from "lucide-react";
+import Swal from "sweetalert2";
 
 const PAGE_SIZE = 10;
 
@@ -23,12 +27,47 @@ const Card = ({ children, className = "" }) => (
   </div>
 );
 
+const Modal = ({ title, onClose, children }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+    <div
+      className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    />
+    <div
+      className="relative z-10 w-full max-w-xl flex flex-col"
+      style={{ maxHeight: "calc(100vh - 24px)" }}
+    >
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-[#6366f1] to-[#a855f7] rounded-2xl blur opacity-20 pointer-events-none" />
+      <div className="relative bg-[#0a0a1a] border border-white/12 rounded-2xl flex flex-col overflow-hidden">
+        {/* Fixed header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/8 shrink-0">
+          <h2 className="text-base font-semibold text-white">{title}</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 text-gray-500 hover:text-white transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        {/* Scrollable content */}
+        <div className="overflow-y-auto flex-1">{children}</div>
+      </div>
+    </div>
+  </div>
+);
+
 export default function Comments() {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [adminImg, setAdminImg] = useState("/default-avatar.jpg");
+  
+  const [showWriteModal, setShowWriteModal] = useState(false);
+  const [newComment, setNewComment] = useState({ userName: "Admin", content: "", isPinned: true });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fetchComments = async () => {
     setLoading(true);
@@ -43,6 +82,17 @@ export default function Comments() {
 
   useEffect(() => {
     fetchComments();
+    const fetchAdminImg = async () => {
+      try {
+        const { data } = await supabase.from("about_me").select("profile_img").limit(1);
+        if (data && data.length > 0 && data[0].profile_img) {
+          setAdminImg(data[0].profile_img);
+        }
+      } catch (error) {
+        console.error("Error fetching admin image:", error);
+      }
+    };
+    fetchAdminImg();
   }, []);
 
   // Reset page when filter/search changes
@@ -59,9 +109,64 @@ export default function Comments() {
   };
 
   const remove = async (id) => {
-    if (!confirm("Delete this comment?")) return;
+    const result = await Swal.fire({
+      title: 'Hapus Komentar?',
+      text: 'Komentar ini akan dihapus permanen.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6366f1',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal'
+    });
+    if (!result.isConfirmed) return;
     await supabase.from("portfolio_comments").delete().eq("id", id);
     fetchComments();
+    Swal.fire({
+      title: 'Terhapus!',
+      text: 'Komentar berhasil dihapus.',
+      icon: 'success',
+      confirmButtonColor: '#6366f1',
+      timer: 1500,
+      timerProgressBar: true
+    });
+  };
+
+  const handleAdminCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!newComment.content.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await supabase.from("portfolio_comments").insert([{
+        user_name: newComment.userName,
+        content: newComment.content,
+        profile_image: adminImg,
+        is_pinned: newComment.isPinned,
+        is_admin: true,
+        created_at: new Date().toISOString()
+      }]);
+      setShowWriteModal(false);
+      setNewComment({ userName: "Admin", content: "", isPinned: true });
+      fetchComments();
+      Swal.fire({
+        title: 'Berhasil!',
+        text: 'Komentar berhasil ditambahkan.',
+        icon: 'success',
+        confirmButtonColor: '#6366f1',
+        timer: 2000,
+        timerProgressBar: true
+      });
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        title: 'Gagal!',
+        text: 'Terjadi kesalahan saat memposting komentar.',
+        icon: 'error',
+        confirmButtonColor: '#6366f1'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const pinnedCount = comments.filter((c) => c.is_pinned).length;
@@ -115,33 +220,46 @@ export default function Comments() {
           </div>
         </div>
 
-        {/* Filter tabs */}
-        <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
-          {[
-            { value: "all", label: "All", count: comments.length },
-            { value: "pinned", label: "Pinned", count: pinnedCount },
-          ].map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => setFilter(tab.value)}
-              className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm transition-all duration-200 ${
-                filter === tab.value
-                  ? "bg-gradient-to-r from-indigo-500/25 to-purple-500/20 border border-indigo-500/35 text-white font-medium"
-                  : "text-gray-500 hover:text-gray-300"
-              }`}
-            >
-              {tab.label}
-              <span
-                className={`px-1.5 py-0.5 rounded-full text-xs ${
+        {/* Filter tabs and Write button */}
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/10">
+            {[
+              { value: "all", label: "All", count: comments.length },
+              { value: "pinned", label: "Pinned", count: pinnedCount },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => setFilter(tab.value)}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm transition-all duration-200 ${
                   filter === tab.value
-                    ? "bg-indigo-500/25 text-indigo-300"
-                    : "bg-white/8 text-gray-500"
+                    ? "bg-gradient-to-r from-indigo-500/25 to-purple-500/20 border border-indigo-500/35 text-white font-medium"
+                    : "text-gray-500 hover:text-gray-300"
                 }`}
               >
-                {tab.count}
-              </span>
-            </button>
-          ))}
+                {tab.label}
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-xs ${
+                    filter === tab.value
+                      ? "bg-indigo-500/25 text-indigo-300"
+                      : "bg-white/8 text-gray-500"
+                  }`}
+                >
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setShowWriteModal(true)}
+            className="relative group shrink-0"
+          >
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#4f52c9] to-[#8644c5] rounded-xl opacity-50 blur group-hover:opacity-80 transition duration-300" />
+            <div className="relative flex items-center gap-2 px-4 py-2 bg-[#030014] rounded-xl border border-white/10">
+              <Plus className="w-4 h-4 text-indigo-400" />
+              <span className="text-sm text-gray-200 hidden sm:block">Write Comment</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -231,7 +349,7 @@ export default function Comments() {
                   {/* Avatar */}
                   <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shrink-0">
                     <img
-                      src={comment.profile_image || "/default-avatar.jpg"}
+                      src={comment.profile_image || (comment.is_admin ? adminImg : "/default-avatar.jpg")}
                       alt="Avatar"
                       className="w-8 h-8 sm:w-9 sm:h-9 rounded-full object-cover"
                     />
@@ -351,6 +469,59 @@ export default function Comments() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Write Comment Modal */}
+      {showWriteModal && (
+        <Modal title="Write Admin Comment" onClose={() => setShowWriteModal(false)}>
+          <form onSubmit={handleAdminCommentSubmit} className="p-5 sm:p-6 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs text-indigo-300/70 uppercase tracking-wider font-medium">Name</label>
+              <input
+                type="text"
+                value={newComment.userName}
+                onChange={(e) => setNewComment({ ...newComment, userName: e.target.value })}
+                className="w-full bg-[#0d0d22] border border-white/10 rounded-xl px-4 py-2.5 text-gray-200 text-sm outline-none focus:border-indigo-500/60"
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-indigo-300/70 uppercase tracking-wider font-medium">Comment</label>
+              <textarea
+                value={newComment.content}
+                onChange={(e) => setNewComment({ ...newComment, content: e.target.value })}
+                className="w-full bg-[#0d0d22] border border-white/10 rounded-xl px-4 py-2.5 text-gray-200 text-sm outline-none focus:border-indigo-500/60 resize-none min-h-[120px]"
+                placeholder="Write your comment here..."
+                required
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                id="isPinned"
+                checked={newComment.isPinned}
+                onChange={(e) => setNewComment({ ...newComment, isPinned: e.target.checked })}
+                className="w-4 h-4 rounded border-white/10 bg-[#0d0d22] text-indigo-500 focus:ring-indigo-500/20"
+              />
+              <label htmlFor="isPinned" className="text-sm text-gray-300">Pin this comment</label>
+            </div>
+            <div className="flex justify-end pt-4">
+              <button type="submit" disabled={isSubmitting} className="relative group/s">
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-[#4f52c9] to-[#8644c5] rounded-xl opacity-60 blur group-hover/s:opacity-100 transition duration-300" />
+                <div className="relative flex items-center gap-2 px-6 py-2.5 bg-[#030014] rounded-xl border border-white/10">
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4 text-indigo-400" />
+                  )}
+                  <span className="text-sm text-gray-200">
+                    {isSubmitting ? "Posting..." : "Post Comment"}
+                  </span>
+                </div>
+              </button>
+            </div>
+          </form>
+        </Modal>
       )}
     </div>
   );

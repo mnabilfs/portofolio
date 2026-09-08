@@ -143,10 +143,10 @@ const Home = () => {
         <title>Muhammad Nabil Farras Sulthan — Fullstack Developer</title>
         <meta name="description" content="Website resmi Muhammad Nabil Farras Sulthan, Fullstack Web Developer. Saya berfokus pada penciptaan pengalaman digital yang menarik dan selalu berupaya memberikan solusi terbaik dalam setiap proyek yang saya kerjakan." />
      <meta name="robots" content="index, follow" />
-        <link rel="canonical" href="https://nabil.com" />
+        <link rel="canonical" href="https://mnabilfs.site" />
         <meta property="og:title" content="Muhammad Nabil Farras Sulthan — Fullstack Web Developer" />
      <meta property="og:description" content="Website resmi dan portofolio Muhammad Nabil Farras Sulthan, Fullstack Web Developer." />
-        <meta property="og:url" content="https://nabil.com" />
+        <meta property="og:url" content="https://mnabilfs.site" />
         <meta property="og:type" content="website" />
         <script type="application/ld+json">{`
           {
@@ -154,7 +154,7 @@ const Home = () => {
             "@type": "Person",
             "name": "Muhammad Nabil Farras Sulthan",
             "jobTitle": "Fullstack Developer",
-            "url": "https://nabil.com",
+            "url": "https://mnabilfs.site",
             "sameAs": [
               "https://github.com/mnabilfs",
               "https://www.linkedin.com/in/muhammad-nabil-farras-sulthan-6ba171290/",

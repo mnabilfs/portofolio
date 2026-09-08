@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from "../../supabase";
 import { Award, Upload, Trash2, ImageIcon, Plus } from 'lucide-react'
+import Swal from "sweetalert2";
 
 const Card = ({ children, className = '' }) => (
   <div className={`relative group ${className}`}>
@@ -84,12 +85,38 @@ export default function Certificates() {
     await supabase.from('certificates').insert({ Img: data.publicUrl })
     setFile(null); setPreview(null); setUploading(false)
     fetchCerts()
+    Swal.fire({
+      title: 'Berhasil!',
+      text: 'Sertifikat berhasil diunggah.',
+      icon: 'success',
+      confirmButtonColor: '#6366f1',
+      timer: 2000,
+      timerProgressBar: true
+    });
   }
 
   const deleteCert = async (id) => {
-    if (!confirm('Delete this certificate?')) return
+    const result = await Swal.fire({
+      title: 'Hapus Sertifikat?',
+      text: 'Sertifikat ini akan dihapus permanen.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#6366f1',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal'
+    });
+    if (!result.isConfirmed) return;
     await supabase.from('certificates').delete().eq('id', id)
     fetchCerts()
+    Swal.fire({
+      title: 'Terhapus!',
+      text: 'Sertifikat berhasil dihapus.',
+      icon: 'success',
+      confirmButtonColor: '#6366f1',
+      timer: 1500,
+      timerProgressBar: true
+    });
   }
 
   return (

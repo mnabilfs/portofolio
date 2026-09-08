@@ -13,8 +13,8 @@ import Login from "./Pages/Login";
 import Dashboard from "./Pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const Portofolio = lazy(() => import("./Pages/Portofolio"));
-const ContactPage = lazy(() => import("./Pages/Contact"));
+import Portofolio from "./Pages/Portofolio";
+import ContactPage from "./Pages/Contact";
 const ProjectDetails = lazy(() => import("./components/ProjectDetail"));
 const WelcomeScreen = lazy(() => import("./Pages/WelcomeScreen"));
 const NotFoundPage = lazy(() => import("./Pages/404"));
@@ -57,7 +57,15 @@ const ProjectPageLayout = () => (
 );
 
 function App() {
-  const [showWelcome, setShowWelcome] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(() => {
+    // Skip WelcomeScreen if already shown in this session
+    return !sessionStorage.getItem('welcomeShown');
+  });
+
+  const handleWelcomeComplete = () => {
+    sessionStorage.setItem('welcomeShown', 'true');
+    setShowWelcome(false);
+  };
 
   return (
     
@@ -73,7 +81,7 @@ function App() {
             element={
               <LandingPage
                 showWelcome={showWelcome}
-                setShowWelcome={setShowWelcome}
+                setShowWelcome={handleWelcomeComplete}
               />
             }
           />
