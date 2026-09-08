@@ -48,6 +48,16 @@ export default function AboutMe() {
   const handleFileChange = (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    if (!f.type.startsWith("image/") || f.name.toLowerCase().endsWith(".heic") || f.name.toLowerCase().endsWith(".heif")) {
+      Swal.fire({
+        title: 'Format tidak didukung!',
+        text: 'Mohon gunakan format PNG, JPG, atau WEBP. Format HEIC tidak didukung oleh browser.',
+        icon: 'error',
+        confirmButtonColor: '#6366f1'
+      });
+      e.target.value = "";
+      return;
+    }
     setFile(f);
     setPreview(URL.createObjectURL(f));
   };
@@ -172,7 +182,7 @@ export default function AboutMe() {
                 </div>
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png, image/jpeg, image/webp, image/gif"
                   onChange={handleFileChange}
                   className="hidden"
                 />

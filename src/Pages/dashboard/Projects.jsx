@@ -87,6 +87,7 @@ const ProjectCard = ({ project, onDelete, onEdit }) => {
               src={project.Img}
               alt={project.Title}
               onLoad={() => setImgLoaded(true)}
+              onError={() => setImgLoaded(true)}
               className={`w-full h-full object-cover transition-opacity duration-300 ${imgLoaded ? "opacity-100" : "opacity-0 absolute"}`}
             />
           </div>
@@ -211,6 +212,18 @@ const ProjectForm = ({
   const handleFileChange = (e) => {
     const f = e.target.files[0];
     if (!f) return;
+    // Validate file type
+    if (!f.type.startsWith("image/") || f.name.toLowerCase().endsWith(".heic") || f.name.toLowerCase().endsWith(".heif")) {
+      Swal.fire({
+        title: 'Format tidak didukung!',
+        text: 'Mohon gunakan format PNG, JPG, atau WEBP. Format HEIC tidak didukung oleh browser.',
+        icon: 'error',
+        confirmButtonColor: '#6366f1'
+      });
+      // Reset input
+      e.target.value = "";
+      return;
+    }
     setFile(f);
     setPreview(URL.createObjectURL(f));
   };
@@ -298,7 +311,7 @@ const ProjectForm = ({
             </div>
             <input
               type="file"
-              accept="image/*"
+              accept="image/png, image/jpeg, image/webp, image/gif"
               onChange={handleFileChange}
               className="hidden"
             />

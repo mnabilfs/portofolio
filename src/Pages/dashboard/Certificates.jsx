@@ -36,6 +36,7 @@ const CertCard = ({ cert, onDelete }) => {
           src={cert.Img}
           alt="Certificate"
           onLoad={() => setImgLoaded(true)}
+          onError={() => setImgLoaded(true)}
           className={`w-full aspect-[16/11.5] object-cover group-hover:scale-105 transition-transform duration-500 ${imgLoaded ? 'block' : 'hidden'}`}
         />
         {imgLoaded && (
@@ -72,6 +73,15 @@ export default function Certificates() {
 
   const handleFile = (f) => {
     if (!f) return
+    if (!f.type.startsWith("image/") || f.name.toLowerCase().endsWith(".heic") || f.name.toLowerCase().endsWith(".heif")) {
+      Swal.fire({
+        title: 'Format tidak didukung!',
+        text: 'Mohon gunakan format PNG, JPG, atau WEBP. Format HEIC tidak didukung oleh browser.',
+        icon: 'error',
+        confirmButtonColor: '#6366f1'
+      });
+      return;
+    }
     setFile(f)
     setPreview(URL.createObjectURL(f))
   }
@@ -163,7 +173,7 @@ export default function Certificates() {
                 <p className="text-xs text-gray-600">PNG, JPG, WEBP supported</p>
               </div>
             )}
-            <input type="file" accept="image/*" onChange={e => handleFile(e.target.files[0])} className="hidden" />
+            <input type="file" accept="image/png, image/jpeg, image/webp, image/gif" onChange={e => { handleFile(e.target.files[0]); e.target.value = ""; }} className="hidden" />
           </label>
 
           {file && (
